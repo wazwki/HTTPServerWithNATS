@@ -11,11 +11,11 @@ import (
 )
 ```
 
-## Основные концепции
+## Basic Concepts
 
-### Соединение (Connection):
+### Connection:
 
-#### Подключение к серверу: Создается объект nats.Conn, который представляет соединение с NATS-сервером.
+#### Connecting to the server: A `nats.Conn` object is created, representing a connection to the NATS server.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222")
@@ -25,21 +25,20 @@ if err != nil {
 defer nc.Close()
 ```
 
+### Subscription:
 
-### Подписка (Subscription):
-
-#### Стандартная подписка: Позволяет подписаться на определенные темы и получать сообщения.
+#### Standard subscription: Allows subscribing to specific subjects and receiving messages.
 
 ```go
 sub, err := nc.Subscribe("subject", func(m *nats.Msg) {
-    log.Printf("Получено сообщение: %s", string(m.Data))
+    log.Printf("Received message: %s", string(m.Data))
 })
 if err != nil {
     log.Fatal(err)
 }
 ```
 
-#### Канальная подписка: Сообщения помещаются в канал, что упрощает их обработку в многопоточных приложениях.
+#### Channel subscription: Messages are placed in a channel, simplifying their processing in multithreaded applications.
 
 ```go
 ch := make(chan *nats.Msg, 64)
@@ -50,12 +49,12 @@ if err != nil {
 
 go func() {
     for msg := range ch {
-        log.Printf("Получено сообщение через канал: %s", string(msg.Data))
+        log.Printf("Received message through channel: %s", string(msg.Data))
     }
 }()
 ```
 
-#### Очередная подписка (Queue Subscription): Используется для реализации балансировки нагрузки, когда несколько подписчиков получают сообщения из одной очереди.
+#### Queue subscription: Used for load balancing, where multiple subscribers receive messages from the same queue.
 
 ```go
 sub, err := nc.QueueSubscribe("subject", "worker-group", func(m *nats.Msg) {
@@ -66,10 +65,9 @@ if err != nil {
 }
 ```
 
+### Publishing:
 
-### Публикация (Publishing):
-
-#### Простая публикация: Отправляет сообщение в указанную тему.
+#### Simple publishing: Sends a message to the specified subject.
 
 ```go
 err := nc.Publish("subject", []byte("Hello, NATS!"))
@@ -78,7 +76,7 @@ if err != nil {
 }
 ```
 
-#### Публикация с подтверждением (Ack): Ожидание подтверждения о доставке сообщения от сервера.
+#### Publishing with acknowledgment (Ack): Waits for a confirmation of message delivery from the server.
 
 ```go
 nc.Publish("subject", []byte("Hello, NATS!"))
@@ -86,27 +84,26 @@ err = nc.Flush()
 if err != nil {
     log.Fatal(err)
 }
-log.Println("Сообщение доставлено!")
+log.Println("Message delivered!")
 ```
 
+### Request-Reply:
 
-### Запрос-ответ (Request-Reply):
-
-#### Запрос: Отправляет сообщение и ожидает ответа в течение заданного времени.
+#### Request: Sends a message and waits for a reply within a specified time.
 
 ```go
 msg, err := nc.Request("subject", []byte("Can I get a response?"), 2*time.Second)
 if err != nil {
     log.Fatal(err)
 }
-log.Printf("Получен ответ: %s", string(msg.Data))
+log.Printf("Received reply: %s", string(msg.Data))
 ```
 
-#### Ответ: Обрабатывает запросы и отправляет ответ обратно клиенту.
+#### Reply: Handles requests and sends a response back to the client.
 
 ```go
 sub, err := nc.Subscribe("subject", func(m *nats.Msg) {
-    log.Printf("Получен запрос: %s", string(m.Data))
+    log.Printf("Received request: %s", string(m.Data))
     m.Respond([]byte("Sure, here is your response!"))
 })
 if err != nil {
@@ -114,10 +111,9 @@ if err != nil {
 }
 ```
 
+### Auto-Unsubscribe:
 
-### Авто-удаление подписки (Auto-Unsubscribe):
-
-#### Можно задать лимит на количество сообщений, которые подписка может получить, после чего она автоматически удаляется.
+#### You can set a limit on the number of messages a subscription can receive, after which it is automatically unsubscribed.
 
 ```go
 sub, err := nc.Subscribe("subject", func(m *nats.Msg) {
@@ -130,12 +126,11 @@ if err != nil {
 sub.AutoUnsubscribe(10)
 ```
 
+## Advanced Features
 
-## Расширенные возможности
+### Connecting to a Cluster:
 
-### Соединение с кластером:
-
-#### NATS поддерживает подключение к нескольким серверам, что повышает отказоустойчивость.
+#### NATS supports connecting to multiple servers, which increases fault tolerance.
 
 ```go
 nc, err := nats.Connect("nats://server1:4222,nats://server2:4222")
@@ -145,10 +140,9 @@ if err != nil {
 defer nc.Close()
 ```
 
+### Connection and Error Handling:
 
-### Обработка событий подключения и ошибок:
-
-#### nats.Conn предоставляет обработчики для различных событий, таких как потеря соединения, восстановление, обнаружение ошибок и закрытие соединения.
+#### `nats.Conn` provides handlers for various events, such as disconnection, reconnection, error detection, and connection closure.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222",
@@ -164,10 +158,9 @@ nc, err := nats.Connect("nats://localhost:4222",
 )
 ```
 
+### Durable Subscription:
 
-### Постоянная подписка (Durable Subscription):
-
-#### Для NATS Streaming (расширенная версия NATS) поддерживаются постоянные подписки, которые сохраняют состояние между сессиями.
+#### NATS Streaming (an extended version of NATS) supports durable subscriptions that maintain state between sessions.
 
 ```go
 import stan "github.com/nats-io/stan.go"
@@ -186,10 +179,9 @@ if err != nil {
 }
 ```
 
+### Streaming Subscriptions:
 
-### Потоковые подписки (Streaming Subscriptions):
-
-#### Возможность сохранять сообщения для подписчиков, которые были временно недоступны, и передавать им пропущенные данные при восстановлении связи.
+#### The ability to store messages for subscribers that were temporarily unavailable and deliver them the missed data upon reconnection.
 
 ```go
 import stan "github.com/nats-io/stan.go"
@@ -210,20 +202,18 @@ if err != nil {
 select {}
 ```
 
+### Authorization and Encryption:
 
-### Авторизация и шифрование:
-
-#### Поддержка аутентификации с использованием токенов, паролей и сертификатов.
-#### TLS-соединения для обеспечения безопасности передачи данных.
+#### Support for authentication using tokens, passwords, and certificates.
+#### TLS connections to ensure the security of data transmission.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222", nats.Secure(&tls.Config{...}))
 ```
 
+### Publishing with Synchronization (Flush):
 
-### Публикация с синхронизацией (Flush):
-
-#### Позволяет убедиться, что все ранее отправленные сообщения были приняты сервером до продолжения выполнения программы.
+#### Allows you to ensure that all previously sent messages have been acknowledged by the server before proceeding with the program execution.
 
 ```go
 err := nc.Publish("subject", []byte("Message to be flushed"))
@@ -238,20 +228,18 @@ if err != nil {
 log.Println("All messages flushed!")
 ```
 
+### Monitoring and Statistics:
 
-### Мониторинг и статистика:
-
-#### nats.Conn предоставляет методы для получения статистики по отправленным и полученным сообщениям, ошибкам и времени задержки.
+#### `nats.Conn` provides methods to get statistics on sent and received messages, errors, and latency.
 
 ```go
 stats := nc.Stats()
 log.Printf("Incoming Msgs: %d", stats.InMsgs)
 ```
 
+### Automatic Reconnection:
 
-### Автоматическое переподключение:
-
-#### Поддержка автоматического переподключения к серверу при разрыве соединения.
+#### Support for automatic reconnection to the server when the connection is lost.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222", nats.MaxReconnects(10))
