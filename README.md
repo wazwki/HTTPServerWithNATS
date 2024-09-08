@@ -1,21 +1,22 @@
-# How to config NATS in golang HTTP-server
+# **How to Set Up NATS in a Golang HTTP Server**
 
-## Install and import NATS library:
+# 1. Installation and Importing the NATS Library:
 
 ```bash
 go get github.com/nats-io/nats.go
 ```
+
 ```go
 import (
     "github.com/nats-io/nats.go"
 )
 ```
 
-## Basic Concepts
+# 2. Basic Concepts
 
-### Connection:
+## 2.1. Connection:
 
-#### Connecting to the server: A `nats.Conn` object is created, representing a connection to the NATS server.
+### Connecting to the Server: An `nats.Conn` object is created, representing the connection to the NATS server.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222")
@@ -25,9 +26,9 @@ if err != nil {
 defer nc.Close()
 ```
 
-### Subscription:
+## 2.2. Subscription:
 
-#### Standard subscription: Allows subscribing to specific subjects and receiving messages.
+### 2.2.1. Standard Subscription: Allows subscribing to specific subjects and receiving messages.
 
 ```go
 sub, err := nc.Subscribe("subject", func(m *nats.Msg) {
@@ -38,7 +39,7 @@ if err != nil {
 }
 ```
 
-#### Channel subscription: Messages are placed in a channel, simplifying their processing in multithreaded applications.
+### 2.2.2. Channel Subscription: Messages are placed in a channel, simplifying processing in multi-threaded applications.
 
 ```go
 ch := make(chan *nats.Msg, 64)
@@ -54,7 +55,7 @@ go func() {
 }()
 ```
 
-#### Queue subscription: Used for load balancing, where multiple subscribers receive messages from the same queue.
+### 2.2.3. Queue Subscription: Used for load balancing, where multiple subscribers receive messages from a single queue.
 
 ```go
 sub, err := nc.QueueSubscribe("subject", "worker-group", func(m *nats.Msg) {
@@ -65,9 +66,9 @@ if err != nil {
 }
 ```
 
-### Publishing:
+## 2.3. Publishing:
 
-#### Simple publishing: Sends a message to the specified subject.
+### 2.3.1. Simple Publishing: Sends a message to a specified subject.
 
 ```go
 err := nc.Publish("subject", []byte("Hello, NATS!"))
@@ -76,7 +77,7 @@ if err != nil {
 }
 ```
 
-#### Publishing with acknowledgment (Ack): Waits for a confirmation of message delivery from the server.
+### 2.3.2. Publishing with Acknowledgment (Ack): Waits for a delivery confirmation from the server.
 
 ```go
 nc.Publish("subject", []byte("Hello, NATS!"))
@@ -87,9 +88,9 @@ if err != nil {
 log.Println("Message delivered!")
 ```
 
-### Request-Reply:
+## 2.4. Request-Response:
 
-#### Request: Sends a message and waits for a reply within a specified time.
+### 2.4.1. Request: Sends a message and waits for a response within a specified time.
 
 ```go
 msg, err := nc.Request("subject", []byte("Can I get a response?"), 2*time.Second)
@@ -99,7 +100,7 @@ if err != nil {
 log.Printf("Received reply: %s", string(msg.Data))
 ```
 
-#### Reply: Handles requests and sends a response back to the client.
+### 2.4.2. Response: Handles requests and sends a response back to the client.
 
 ```go
 sub, err := nc.Subscribe("subject", func(m *nats.Msg) {
@@ -111,9 +112,9 @@ if err != nil {
 }
 ```
 
-### Auto-Unsubscribe:
+## 2.5. Auto-Unsubscribe:
 
-#### You can set a limit on the number of messages a subscription can receive, after which it is automatically unsubscribed.
+### You can set a limit on the number of messages a subscription can receive before it is automatically removed.
 
 ```go
 sub, err := nc.Subscribe("subject", func(m *nats.Msg) {
@@ -126,11 +127,11 @@ if err != nil {
 sub.AutoUnsubscribe(10)
 ```
 
-## Advanced Features
+# 3. Advanced Features
 
-### Connecting to a Cluster:
+## 3.1. Connecting to a Cluster:
 
-#### NATS supports connecting to multiple servers, which increases fault tolerance.
+### NATS supports connecting to multiple servers, which enhances fault tolerance.
 
 ```go
 nc, err := nats.Connect("nats://server1:4222,nats://server2:4222")
@@ -140,9 +141,9 @@ if err != nil {
 defer nc.Close()
 ```
 
-### Connection and Error Handling:
+## 3.2. Handling Connection and Error Events:
 
-#### `nats.Conn` provides handlers for various events, such as disconnection, reconnection, error detection, and connection closure.
+### `nats.Conn` provides handlers for various events such as connection loss, reconnection, error detection, and connection closure.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222",
@@ -150,7 +151,7 @@ nc, err := nats.Connect("nats://localhost:4222",
         log.Println("Disconnected!")
     }),
     nats.ReconnectHandler(func(nc *nats.Conn) {
-        log.Printf("Reconnected to %v!\n", nc.ConnectedUrl())
+        log.Printf("Reconnected to %v!\\n", nc.ConnectedUrl())
     }),
     nats.ClosedHandler(func(_ *nats.Conn) {
         log.Println("Connection closed!")
@@ -158,9 +159,9 @@ nc, err := nats.Connect("nats://localhost:4222",
 )
 ```
 
-### Durable Subscription:
+## 3.3. Durable Subscriptions:
 
-#### NATS Streaming (an extended version of NATS) supports durable subscriptions that maintain state between sessions.
+### For NATS Streaming (an extended version of NATS), durable subscriptions are supported, which preserve state between sessions.
 
 ```go
 import stan "github.com/nats-io/stan.go"
@@ -172,16 +173,16 @@ if err != nil {
 defer sc.Close()
 
 sub, err := sc.Subscribe("subject", func(msg *stan.Msg) {
-    log.Printf("Received a message: %s\n", msg)
+    log.Printf("Received a message: %s\\n", msg)
 }, stan.DurableName("my-durable"))
 if err != nil {
     log.Fatal(err)
 }
 ```
 
-### Streaming Subscriptions:
+## 3.4. Streaming Subscriptions:
 
-#### The ability to store messages for subscribers that were temporarily unavailable and deliver them the missed data upon reconnection.
+### Ability to store messages for subscribers who were temporarily unavailable and deliver missed data upon reconnection.
 
 ```go
 import stan "github.com/nats-io/stan.go"
@@ -202,18 +203,19 @@ if err != nil {
 select {}
 ```
 
-### Authorization and Encryption:
+## 3.5. Authorization and Encryption:
 
-#### Support for authentication using tokens, passwords, and certificates.
-#### TLS connections to ensure the security of data transmission.
+### Support for authentication using tokens, passwords, and certificates.
+
+### TLS connections for secure data transmission.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222", nats.Secure(&tls.Config{...}))
 ```
 
-### Publishing with Synchronization (Flush):
+## 3.6. Publishing with Flush:
 
-#### Allows you to ensure that all previously sent messages have been acknowledged by the server before proceeding with the program execution.
+### Ensures that all previously sent messages have been received by the server before continuing the program execution.
 
 ```go
 err := nc.Publish("subject", []byte("Message to be flushed"))
@@ -228,18 +230,18 @@ if err != nil {
 log.Println("All messages flushed!")
 ```
 
-### Monitoring and Statistics:
+## 3.7. Monitoring and Statistics:
 
-#### `nats.Conn` provides methods to get statistics on sent and received messages, errors, and latency.
+### `nats.Conn` provides methods to get statistics on sent and received messages, errors, and latency.
 
 ```go
 stats := nc.Stats()
 log.Printf("Incoming Msgs: %d", stats.InMsgs)
 ```
 
-### Automatic Reconnection:
+## 3.8. Automatic Reconnection:
 
-#### Support for automatic reconnection to the server when the connection is lost.
+### Supports automatic reconnection to the server upon disconnection.
 
 ```go
 nc, err := nats.Connect("nats://localhost:4222", nats.MaxReconnects(10))
